@@ -81,7 +81,7 @@ module.exports = async function(context, req) {
         console.error("Error:", error);
         context.res = {
             status: 500,
-            body: "Error occurred",
+            body: error,
         };
     }
 };
