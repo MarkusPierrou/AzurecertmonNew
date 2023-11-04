@@ -1,7 +1,7 @@
 const https = require("https");
 const { TokenCredential, ClientSecretCredential } = require("@azure/identity");
 
-const tenantId = "X";
+const tenantId = "d4616c26-b9bd-4d02-91d7-60ea7be3789a";
 const clientId = process.env["client-id"];
 const clientSecret = process.env["clientsecret"];
 
