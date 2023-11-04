@@ -2,18 +2,18 @@ const https = require("https");
 const { TokenCredential, ClientSecretCredential } = require("@azure/identity");
 
 const tenantId = "X";
-const clientId = "X";
-const clientSecret = "X";
+const clientId = process.env["client-id"];
+const clientSecret = process.env["clientsecret"];
 
 const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
 
 const { Pool } = require("pg");
 
 const config = {
-    user: "X",
-    host: "X",
-    database: "cX",
-    password: "X",
+    user: process.env["database-user"],
+    host: process.env["database-server"],
+    database: process.env["database"],
+    password: process.env["database-password"],
     port: 5432, // Your PostgreSQL server port
     ssl: true, // This depends on your PostgreSQL server configuration
 };
