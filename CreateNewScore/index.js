@@ -19,20 +19,22 @@ const config = {
 };
 
 module.exports = async function(context, req) {
-    credential
-        .getToken("https://graph.microsoft.com/.default")
-        .then((tokenResponse) => {
-            const accessToken = tokenResponse.token;
+    try {
+        const tokenResponse = await credential.getToken(
+            "https://graph.microsoft.com/.default"
+        );
+        const accessToken = tokenResponse.token;
 
-            const options = {
-                hostname: "graph.microsoft.com",
-                path: "/beta/deviceManagement/applePushNotificationCertificate",
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            };
+        const options = {
+            hostname: "graph.microsoft.com",
+            path: "/beta/deviceManagement/applePushNotificationCertificate",
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        };
 
+        const data = await new Promise((resolve, reject) => {
             const req = https.request(options, (res) => {
                 let data = "";
 
@@ -40,54 +42,46 @@ module.exports = async function(context, req) {
                     data += chunk;
                 });
 
-                res.on("end", async() => {
-                    console.log(JSON.parse(data));
-                    const certificate = JSON.parse(data).topicIdentifier;
-                    const expirationdatetime = JSON.parse(data).expirationDateTime;
-                    const appleIdentifier = JSON.parse(data).appleIdentifier;
-                    // Process the data as needed
-
-                    const pool = new Pool(config);
-
-                    try {
-                        const client = await pool.connect();
-                        const text =
-                            "INSERT INTO certificate(certificate, expirationdatetime, appleIdentifier) VALUES($1, $2, $3)"; // Modify with your table and column names
-                        const values = [certificate, expirationdatetime, appleIdentifier]; // Replace with your values
-
-                        const res = await client.query(text, values);
-
-                        context.res = {
-                            status: 200,
-                            body: "Data inserted successfully",
-                        };
-
-                        client.release(); // Release the client back to the pool
-                    } catch (err) {
-                        context.log(err);
-                        context.res = {
-                            status: 500,
-                            body: "Error inserting data",
-                        };
-                    }
+                res.on("end", () => {
+                    resolve(JSON.parse(data));
                 });
             });
 
             req.on("error", (error) => {
-                console.error("Error making the request:", error);
-                context.res = {
-                    status: 500,
-                    body: "Error making the request",
-                };
+                reject(error);
             });
 
             req.end();
-        })
-        .catch((error) => {
-            console.error("Failed to acquire token:", error);
-            context.res = {
-                status: 500,
-                body: "Failed to acquire token",
-            };
         });
+
+        const certificate = data.topicIdentifier;
+        const expirationdatetime = data.expirationDateTime;
+        const appleIdentifier = data.appleIdentifier;
+
+        const pool = new Pool(config);
+
+        const client = await pool.connect();
+        const text =
+            "INSERT INTO certificate(certificate, expirationdatetime, appleIdentifier) VALUES($1, $2, $3)";
+        const values = [certificate, expirationdatetime, appleIdentifier];
+
+        await client.query(text, values);
+
+        client.release();
+
+        context.res = {
+            status: 200,
+            body: {
+                certificate: certificate,
+                expirationdatetime: expirationdatetime,
+                appleIdentifier: appleIdentifier,
+            },
+        };
+    } catch (error) {
+        console.error("Error:", error);
+        context.res = {
+            status: 500,
+            body: "Error occurred",
+        };
+    }
 };
