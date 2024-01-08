@@ -1,11 +1,8 @@
 const https = require("https");
 const { TokenCredential, ClientSecretCredential } = require("@azure/identity");
 
-const tenantId = "d4616c26-b9bd-4d02-91d7-60ea7be3789a";
 const clientId = process.env["client-id"];
 const clientSecret = process.env["clientsecret"];
-
-const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
 
 const { Pool } = require("pg");
 
@@ -19,74 +16,76 @@ const config = {
 };
 
 module.exports = async function(context, req) {
-const tenantIds = req.query.tenantIds;
-context.log(`Received tenantIds: ${tenantIds}`);
-    try {
-        const tokenResponse = await credential.getToken(
-            "https://graph.microsoft.com/.default"
-        );
-        const accessToken = tokenResponse.token;
+const tenantId = req.query.tenantIds;
 
-        const options = {
-            hostname: "graph.microsoft.com",
-            path: "/beta/deviceManagement/applePushNotificationCertificate",
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        };
+let credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+try {
+    const tokenResponse = await credential.getToken(
+        "https://graph.microsoft.com/.default"
+    );
+    const accessToken = tokenResponse.token;
 
-        const data = await new Promise((resolve, reject) => {
-            const req = https.request(options, (res) => {
-                let data = "";
+    const options = {
+        hostname: "graph.microsoft.com",
+        path: "/beta/deviceManagement/applePushNotificationCertificate",
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    };
 
-                res.on("data", (chunk) => {
-                    data += chunk;
-                });
+    const data = await new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = "";
 
-                res.on("end", () => {
-                    resolve(JSON.parse(data));
-                });
+            res.on("data", (chunk) => {
+                data += chunk;
             });
 
-            req.on("error", (error) => {
-                reject(error);
+            res.on("end", () => {
+                resolve(JSON.parse(data));
             });
-
-            req.end();
         });
 
-        const certificate = data.topicIdentifier;
-        const expirationdatetime = data.expirationDateTime;
-        const appleIdentifier = data.appleIdentifier;
+        req.on("error", (error) => {
+            reject(error);
+        });
 
-        const pool = new Pool(config);
+        req.end();
+    });
+    const tenant = tenantId;
+    const certificate = data.topicIdentifier;
+    const expirationdate = data.expirationDateTime;
+    const email = data.appleIdentifier;
 
-        const client = await pool.connect();
-        const text =
-            "INSERT INTO certificate(certificate, expirationdatetime, appleIdentifier) VALUES($1, $2, $3)";
-        const values = [certificate, expirationdatetime, appleIdentifier];
+    const pool = new Pool(config);
 
-        await client.query(text, values);
+    const client = await pool.connect();
+    const text =
+        "INSERT INTO applecertificate(tenant, certificate, expirationdate, email) VALUES($1, $2, $3, $4)";
+    const values = [tenant, certificate, expirationdate, email];
 
-        client.release();
+    await client.query(text, values);
 
-        context.res = {
-            status: 200,
-            body: {
-                certificate: certificate,
-                expirationdatetime: expirationdatetime,
-                appleIdentifier: appleIdentifier,
-            },
-        };
-    } catch (error) {
-        console.error("Error:", error);
-        context.res = {
-            status: 500,
-            body: {
-                ClientID: clientId,
-                Error: error,
-            },
-        };
-    }
+    client.release();
+
+    context.res = {
+        status: 200,
+        body: {
+            tenantIds: tenantId,
+            certificate: certificate,
+            expirationdatetime: expirationdate,
+            appleIdentifier: email,
+        },
+    };
+} catch (error) {
+    console.error("Error:", error);
+    context.res = {
+        status: 500,
+        body: {
+            ClientID: clientId,
+            Error: error,
+        },
+    };
+}
 };
