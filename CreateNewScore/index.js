@@ -1,7 +1,6 @@
 const https = require("https");
 const { TokenCredential, ClientSecretCredential } = require("@azure/identity");
 
-const tenantId = "d4616c26-b9bd-4d02-91d7-60ea7be3789a";
 const clientId = process.env["client-id"];
 const clientSecret = process.env["clientsecret"];
 
@@ -19,6 +18,24 @@ const config = {
 };
 
 module.exports = async function(context, req) {
+    const tenantID = req.query.tenantID;
+
+    if (tenantID) {
+      // Process the tenantID as needed
+      // ...
+  
+      // Respond with a result
+      context.res = {
+        status: 200,
+        body: { result: `Received tenant ID: ${tenantID}` }
+      };
+    } else {
+      context.res = {
+        status: 400,
+        body: { error: 'Tenant ID is missing' }
+      };
+    }
+  const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
     try {
         const tokenResponse = await credential.getToken(
             "https://graph.microsoft.com/.default"
