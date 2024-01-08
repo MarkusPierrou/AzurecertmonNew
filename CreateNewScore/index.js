@@ -72,7 +72,6 @@ module.exports = async function(context, req) {
         context.res = {
             status: 200,
             body: {
-                tenantId: tenantId,
                 certificate: certificate,
                 expirationdatetime: expirationdatetime,
                 appleIdentifier: appleIdentifier,
