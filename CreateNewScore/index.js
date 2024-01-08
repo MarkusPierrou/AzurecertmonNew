@@ -19,6 +19,8 @@ const config = {
 };
 
 module.exports = async function(context, req) {
+const tenantIds = req.query.tenantIds;
+context.log(`Received tenantIds: ${tenantIds}`);
     try {
         const tokenResponse = await credential.getToken(
             "https://graph.microsoft.com/.default"
