@@ -1,8 +1,11 @@
 const https = require("https");
 const { TokenCredential, ClientSecretCredential } = require("@azure/identity");
 
+const tenantId = "d4616c26-b9bd-4d02-91d7-60ea7be3789a";
 const clientId = process.env["client-id"];
 const clientSecret = process.env["clientsecret"];
+
+const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
 
 const { Pool } = require("pg");
 
@@ -16,24 +19,39 @@ const config = {
 };
 
 module.exports = async function(context, req) {
-    const tenantId = req.query.tenantId;
+    const tenantIds = req.query.tenantIds;
 
-    if (tenantId) {
-      // Process the tenantId as needed
-      // ...
+    if (tenantIds) {
+      try {
+        // Log the tenantId to the console for testing purposes
+        context.log(`Received tenantIds: ${tenantIds}`);
   
-      // Respond with a result
-      context.res = {
-        status: 200,
-        body: { result: `Received tenant ID: ${tenantId}` }
-      };
+        // Respond with the received tenantId as plain text
+        context.res = {
+          status: 200,
+          body: `Received tenantIds: ${tenantIds}`,
+          headers: {
+            'Content-Type': 'text/plain'
+          }
+        };
+      } catch (error) {
+        context.res = {
+          status: 500,
+          body: `Internal Server Error: ${error.message}`,
+          headers: {
+            'Content-Type': 'text/plain'
+          }
+        };
+      }
     } else {
       context.res = {
         status: 400,
-        body: { error: 'Tenant ID is missing' }
+        body: 'Bad Request: Tenant ID is missing',
+        headers: {
+          'Content-Type': 'text/plain'
+        }
       };
     }
-  const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
     try {
         const tokenResponse = await credential.getToken(
             "https://graph.microsoft.com/.default"
@@ -87,6 +105,7 @@ module.exports = async function(context, req) {
         context.res = {
             status: 200,
             body: {
+                tenantId: tenantId,
                 certificate: certificate,
                 expirationdatetime: expirationdatetime,
                 appleIdentifier: appleIdentifier,
