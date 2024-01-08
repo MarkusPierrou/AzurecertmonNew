@@ -4,8 +4,6 @@ const { TokenCredential, ClientSecretCredential } = require("@azure/identity");
 const clientId = process.env["client-id"];
 const clientSecret = process.env["clientsecret"];
 
-const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-
 const { Pool } = require("pg");
 
 const config = {
