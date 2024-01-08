@@ -18,16 +18,16 @@ const config = {
 };
 
 module.exports = async function(context, req) {
-    const tenantID = req.query.tenantID;
+    const tenantId = req.query.tenantId;
 
-    if (tenantID) {
-      // Process the tenantID as needed
+    if (tenantId) {
+      // Process the tenantId as needed
       // ...
   
       // Respond with a result
       context.res = {
         status: 200,
-        body: { result: `Received tenant ID: ${tenantID}` }
+        body: { result: `Received tenant ID: ${tenantId}` }
       };
     } else {
       context.res = {
