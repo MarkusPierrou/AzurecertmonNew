@@ -20,38 +20,8 @@ const config = {
 
 module.exports = async function(context, req) {
     const tenantIds = req.query.tenantIds;
-
-    if (tenantIds) {
-      try {
-        // Log the tenantId to the console for testing purposes
-        context.log(`Received tenantIds: ${tenantIds}`);
-  
-        // Respond with the received tenantId as plain text
-        context.res = {
-          status: 200,
-          body: `Received tenantIds: ${tenantIds}`,
-          headers: {
-            'Content-Type': 'text/plain'
-          }
-        };
-      } catch (error) {
-        context.res = {
-          status: 500,
-          body: `Internal Server Error: ${error.message}`,
-          headers: {
-            'Content-Type': 'text/plain'
-          }
-        };
-      }
-    } else {
-      context.res = {
-        status: 400,
-        body: 'Bad Request: Tenant ID is missing',
-        headers: {
-          'Content-Type': 'text/plain'
-        }
-      };
-    }
+    context.log(`Received tenantIds: ${tenantIds}`);
+    
     try {
         const tokenResponse = await credential.getToken(
             "https://graph.microsoft.com/.default"
